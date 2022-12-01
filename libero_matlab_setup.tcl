@@ -36,10 +36,15 @@ import_files \
          -library {work} \
          -hdl_source $file1
 
-import_files \
-         -convert_EDN_to_HDL 0 \
-         -library {work} \
-         -hdl_source $file2
+if {[file exists file2] == 1} {
+    import_files \
+        -convert_EDN_to_HDL 0 \
+        -library {work} \
+        -hdl_source $file2
+    puts "$file2 was copied!"
+} else {
+    puts "$file2 doesn't exist!"
+}
 
 import_files \
          -convert_EDN_to_HDL 0 \
