@@ -47,9 +47,9 @@ set vhdl_files [lreplace $vhdl_files $idx $idx]
 set idx [lsearch $vhdl_files $tb_file]
 set vhdl_files [lreplace $vhdl_files $idx $idx]
 
-set tb_pkg_project_file "$location/stimulus/$module\_fixpt_tb.vhd"
+set tb_pkg_project_file "$location/stimulus/$module\_fixpt_tb_pkg.vhd"
 puts "File location is $tb_pkg_project_file"
-set tb_project_file "$location/stimulus/$module\_fixpt_tb_pkg.vhd"
+set tb_project_file "$location/stimulus/$module\_fixpt_tb.vhd"
 puts "File location is $tb_project_file"
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -94,8 +94,36 @@ save_project
 foreach dat_file $dat_files {
     file copy $dat_file "$location/simulation"
 }
-
 #Run specific tools
 run_tool -name {SIM_PRESYNTH}
 #run_tool -name {SYNTHESIZE}
 #save_project
+
+#https://wiki.tcl-lang.org/page/How+do+I+read+and+write+files+in+Tcl
+
+set fp [open "$location/simulation/run.do" r]
+set file_data [read $fp]
+close $fp
+set data [split $file_data "\n"]
+
+set filename "$location/simulation/run_edit.do"
+set fileId [open $filename "w"]
+
+foreach line $data {
+     if {([string match "*exit*" $line] == 0) &&
+        ([string match "*onbreak*" $line] == 0) &&
+        ([string match "*onerror*" $line] == 0) &&
+        ([string match "log*" $line] == 0)} {
+            puts $fileId $line
+     }
+     if {[string match "*vsim*" $line] != 0} {
+        for {set i 1} {$i < 18} {incr i} {
+            puts $fileId "radix define fp_${i} -fixed -fraction 1 -base decimal"
+        }
+        puts $fileId "add wave /$tb_name/*"
+     }
+}
+close $fileId
+
+set_modelsim_options -use_automatic_do_file 0
+set_modelsim_options -user_do_file "$location/simulation/run_edit.do"

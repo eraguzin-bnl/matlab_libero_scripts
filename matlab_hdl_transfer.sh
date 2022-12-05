@@ -55,6 +55,7 @@ directory=none
 file=none
 create=false
 move=false
+open=false
 
 #Parse with long arguments
 #https://stackoverflow.com/a/7680682
@@ -104,6 +105,12 @@ while getopts :-:s:l:d:f:cm o; do
                     echo "Will SCP Matlab project"
                     move=true
                     ;;
+
+                open)
+                    check_for_argument false ${!OPTIND} "open"
+                    echo "Will open Libero at end"
+                    open=true
+                    ;;
                 *) usage
             esac;;
 
@@ -141,15 +148,14 @@ while getopts :-:s:l:d:f:cm o; do
         move=true
         ;;
 
+    o)
+        echo "Will open Libero at the end"
+        open=true
+        ;;
+
     *) usage
   esac
 done
-echo "SCP source is" $scp_source
-echo "Local project is" $local_project
-echo "Directory location is" $directory
-echo "File is" $file
-echo "Create is" $create
-echo "Move is" $move
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Do the scp if necessary
@@ -204,25 +210,10 @@ location_to_send=$local_project/$directory
 
 /usr/local/microchip/Libero_SoC_v2022.2/Libero/bin64/libero script:libero_matlab_setup.tcl "script_args:$location_to_send $file" logfile:make_libero.log
 
-exit 0
-#-----------------------------------------------------------------------------------------------------------------------------------------------------------------
-#Move relevant files around for test bench
-#-----------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-data_files=$(find $local_project/codegen/$file/hdlsrc -type f -name "*.dat")
-for file in $data_files
-    do
-        echo "Moving $file"
-        mv $file $local_project/libero_proj/simulation
-    done
-
-#-----------------------------------------------------------------------------------------------------------------------------------------------------------------
-#Simulate and edit the DO file
-#-----------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Start Libero
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-/usr/local/microchip/Libero_SoC_v2022.2/Libero/bin/libero
+if [ $open == true ]
+then
+    /usr/local/microchip/Libero_SoC_v2022.2/Libero/bin/libero
+fi
