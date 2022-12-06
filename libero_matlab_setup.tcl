@@ -127,3 +127,6 @@ close $fileId
 
 set_modelsim_options -use_automatic_do_file 0
 set_modelsim_options -user_do_file "$location/simulation/run_edit.do"
+set_modelsim_options -log_all_signals 1
+set_modelsim_options -dump_vcd 1
+set_modelsim_options -vcd_file "$location/simulation/output.vcd"

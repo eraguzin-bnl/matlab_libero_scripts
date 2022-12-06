@@ -166,9 +166,9 @@ then
     if  [ $scp_source != none ] && [ $local_project != none ]
     then
         echo "-------------------------------------------------------------------------------------------------------------------------------------------------------------------"
-        echo "SCP INITIALIZING
+        echo "SCP INITIALIZING"
         scp -r $scp_source $local_project
-        echo "SCP FINISHED
+        echo "SCP FINISHED"
         echo "-------------------------------------------------------------------------------------------------------------------------------------------------------------------"
     else
         echo "You need to specify a source and destination for the SCP to move files over"
@@ -208,7 +208,13 @@ fi
 
 location_to_send=$local_project/$directory
 
+echo "-------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+echo "TCL SCRIPT INITIALIZING"
+
 /usr/local/microchip/Libero_SoC_v2022.2/Libero/bin64/libero script:libero_matlab_setup.tcl "script_args:$location_to_send $file" logfile:make_libero.log
+
+echo "TCL SCRIPT FINISHED"
+echo "-------------------------------------------------------------------------------------------------------------------------------------------------------------------"
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Start Libero
