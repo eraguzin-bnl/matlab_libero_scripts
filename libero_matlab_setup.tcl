@@ -26,9 +26,17 @@ puts "Testbench name is $tb_name"
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #Get all files with .dat extension. Needed for simulation
-set dat_files [list]
-lappend dat_files {*}[glob -dir $hdl_location *.dat]
+#set dat_files [glob -dir $hdl_location *.dat]
 #puts "dat_files are $dat_files"
+
+
+if {[catch {glob -dir $hdl_location *.dat} errmsg]} {
+    puts "There are no .dat files"
+    set dat_files []
+} else {
+    puts "There are .dat files"
+    set dat_files [glob -dir $hdl_location *.dat]
+}
 
 #Get all files with _tb text. Needed for simulation
 set tb_pkg_file [glob -dir $hdl_location *_tb_pkg.vhd]
@@ -51,6 +59,13 @@ set tb_pkg_project_file "$location/stimulus/$module\_fixpt_tb_pkg.vhd"
 puts "File location is $tb_pkg_project_file"
 set tb_project_file "$location/stimulus/$module\_fixpt_tb.vhd"
 puts "File location is $tb_project_file"
+
+if {[file exists $location]} then {
+    puts "Deleting the existing $location"
+    file delete -force -- $location
+} else {
+    puts "Creating new directory"
+}
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Libero operations, create the project
@@ -119,6 +134,7 @@ foreach line $data {
      if {[string match "*vsim*" $line] != 0} {
         for {set i 1} {$i < 18} {incr i} {
             puts $fileId "radix define fp_${i} -fixed -fraction 1 -base decimal"
+            puts $fileId "radix define sfp_${i} -fixed -signed -fraction 1 -base decimal"
         }
         puts $fileId "add wave /$tb_name/*"
      }
@@ -127,6 +143,3 @@ close $fileId
 
 set_modelsim_options -use_automatic_do_file 0
 set_modelsim_options -user_do_file "$location/simulation/run_edit.do"
-set_modelsim_options -log_all_signals 1
-set_modelsim_options -dump_vcd 1
-set_modelsim_options -vcd_file "$location/simulation/output.vcd"

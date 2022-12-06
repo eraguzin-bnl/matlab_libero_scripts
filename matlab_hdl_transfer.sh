@@ -19,11 +19,17 @@
 PROGNAME=$0
 usage() {
   cat << EOF >&2
-Usage: $PROGNAME [-v] [-d <dir>] [-f <file>]
+Usage: $PROGNAME [-s <scp_source>] [-l <local_source>] [-d <directory>]
 
--f <file>: ...
- -d <dir>: ...
-       -v: ...
+-s <scp_source>: Location of the Matlab folder that needs to be brought locally. Example: eraguzin@silicon.inst.bnl.gov:/u/home/eraguzin/matlab/
+-l <local_project>: Location on this computer where you want to bring the Matlab folder. Example: ~/nextcloud/LuSEE/matlab_transfer
+-d <directory>: If starting this without SCP mode, you need the local project location and a subdirectory where the specific project is (for example, we have "basic" and "matlab" in the LNspec folder)
+-f <file>: Each Matlab project can have multiple modules that are generated. Name the one you want to make the Libero project out of. Example: sfft
+-m <move>: Flag to SCP over the Matlab files
+-c <create>: Flag to create a Libero project
+-o <open>: Flag to open the Libero project at the end
+
+So for example, with only the -m flag and -s and -l, you can simply SSH over everything. If the files already exist, with -l, -d, -f, and -c you can create the Libero project locally with no SCP connection. And use -o to open Libero at the end.
 EOF
   exit 1
 }
@@ -165,11 +171,11 @@ if [ $move == true ]
 then
     if  [ $scp_source != none ] && [ $local_project != none ]
     then
-        echo "-------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+        echo "--------------------------------------------------------------------------------------------------------------"
         echo "SCP INITIALIZING"
         scp -r $scp_source $local_project
         echo "SCP FINISHED"
-        echo "-------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+        echo "--------------------------------------------------------------------------------------------------------------"
     else
         echo "You need to specify a source and destination for the SCP to move files over"
     fi
@@ -208,18 +214,24 @@ fi
 
 location_to_send=$local_project/$directory
 
-echo "-------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+echo "--------------------------------------------------------------------------------------------------------------"
 echo "TCL SCRIPT INITIALIZING"
 
 /usr/local/microchip/Libero_SoC_v2022.2/Libero/bin64/libero script:libero_matlab_setup.tcl "script_args:$location_to_send $file" logfile:make_libero.log
 
 echo "TCL SCRIPT FINISHED"
-echo "-------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+echo "--------------------------------------------------------------------------------------------------------------"
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Start Libero
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 if [ $open == true ]
 then
+    echo "--------------------------------------------------------------------------------------------------------------"
+    echo "STARTING LIBERO"
+
     /usr/local/microchip/Libero_SoC_v2022.2/Libero/bin/libero
+
+    echo "LIBERO CLOSED"
+    echo "--------------------------------------------------------------------------------------------------------------"
 fi
