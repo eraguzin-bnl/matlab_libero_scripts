@@ -204,15 +204,15 @@ then
     #https://stackoverflow.com/questions/4651437/how-do-i-set-a-variable-to-the-output-of-a-command-in-bash
     directory=$(echo $scp_source | sed 's:.*/::')
     echo "Directory is now" $directory
+    location_to_send=$local_project/$directory
 else
     if [ $directory == none ]
     then
-        echo "You need to specify a specific directory for the Matlab project"
-        exit 0
+        location_to_send=$local_project
+    else
+        location_to_send=$local_project/$directory
     fi
 fi
-
-location_to_send=$local_project/$directory
 
 echo "--------------------------------------------------------------------------------------------------------------"
 echo "TCL SCRIPT INITIALIZING"
