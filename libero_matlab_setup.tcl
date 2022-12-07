@@ -7,7 +7,7 @@
 #Get all directory values
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-puts "Welcome to Eric's Matlab Setup TCL script"
+puts "Welcome to Eric's Matlab Libero Setup TCL script!"
 set directory_path [lindex $argv 0]
 set module [lindex $argv 1]
 puts "Directory Path is $directory_path"
@@ -107,6 +107,7 @@ organize_tool_files -tool {SIM_POSTLAYOUT} -file $tb_pkg_project_file -file $tb_
 set_modelsim_options -tb_module_name $tb_name
 save_project
 
+#.dat files are necessary in the simulation folder for ModelSim to pull seed values and compare to expected values
 foreach dat_file $dat_files {
     file copy $dat_file "$location/simulation"
 }
@@ -117,30 +118,40 @@ run_tool -name {SIM_PRESYNTH}
 
 #https://wiki.tcl-lang.org/page/How+do+I+read+and+write+files+in+Tcl
 
+#Now that the simulation has run once, Libero auto-generated a run.do file. There's a lot in there that I didn't want to do programmatically, so Libero auto-generating it is the easiest
+#But there are a few lines that sometimes get added, like telling it to exit after simulation, or after a break or error, or logging the wrong signals
+#So I open up the run.do file and write each line to a new file, taking out some of them, and then adding others at the end.
 set fp [open "$location/simulation/run.do" r]
 set file_data [read $fp]
 close $fp
 set data [split $file_data "\n"]
 
+#New edited file
 set filename "$location/simulation/run_edit.do"
 set fileId [open $filename "w"]
 
 foreach line $data {
+        #Don't include lines with these commands
      if {([string match "*exit*" $line] == 0) &&
         ([string match "*onbreak*" $line] == 0) &&
         ([string match "*onerror*" $line] == 0) &&
         ([string match "log*" $line] == 0)} {
             puts $fileId $line
      }
+        #After the vsim command, I want to put these, so they run in the ModelSim environment, but before it actually runs
      if {[string match "*vsim*" $line] != 0} {
         for {set i 1} {$i < 18} {incr i} {
+            #Gives fixed point (signed and unsigned) radixes when looking at signal values. ModelSim doesn't do this themselves, but our project is all about fixed point numbers with different values
+            #You can go up to 17 fractional digits in ModelSim, so I have all the options up til that point
             puts $fileId "radix define fp_${i} -fixed -fraction 1 -base decimal"
             puts $fileId "radix define sfp_${i} -fixed -signed -fraction 1 -base decimal"
         }
+        #So that the top level signals are already recorded during the simulation
         puts $fileId "add wave /$tb_name/*"
      }
 }
 close $fileId
 
+#Tells Libero that by default, next time you start a ModelSim simulation, don't auto-generate a DO file, use this custom one we just made
 set_modelsim_options -use_automatic_do_file 0
 set_modelsim_options -user_do_file "$location/simulation/run_edit.do"
