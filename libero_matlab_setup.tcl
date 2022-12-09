@@ -148,10 +148,24 @@ foreach line $data {
         }
         #So that the top level signals are already recorded during the simulation
         puts $fileId "add wave /$tb_name/*"
+        #Track all signals for VCD output dump
+        puts $fileId "vcd file $module\_waveform.vcd"
+        puts $fileId "vcd add -r /$tb_name/*"
+
      }
 }
+#Flush VCD after the "run" command
+puts $fileId "vcd flush"
 close $fileId
 
 #Tells Libero that by default, next time you start a ModelSim simulation, don't auto-generate a DO file, use this custom one we just made
 set_modelsim_options -use_automatic_do_file 0
 set_modelsim_options -user_do_file "$location/simulation/run_edit.do"
+save_project
+
+#close_project -save 1
+#puts "Project closed"
+#open_project -file "$location/$project_name\.prjx"
+#puts "Project open"
+#Run again to get VCD output (this hangs the script)
+#run_tool -name {SIM_PRESYNTH}
