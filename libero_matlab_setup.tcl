@@ -150,7 +150,8 @@ foreach line $data {
         puts $fileId "add wave /$tb_name/*"
         #Track all signals for VCD output dump
         puts $fileId "vcd file $module\_waveform.vcd"
-        puts $fileId "vcd add -r /$tb_name/*"
+        #puts $fileId "vcd add -r /$tb_name/*"
+        puts $fileId "vcd add /$tb_name/*"
 
      }
 }
