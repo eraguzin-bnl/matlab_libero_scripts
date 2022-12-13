@@ -143,8 +143,8 @@ foreach line $data {
         for {set i 1} {$i < 18} {incr i} {
             #Gives fixed point (signed and unsigned) radixes when looking at signal values. ModelSim doesn't do this themselves, but our project is all about fixed point numbers with different values
             #You can go up to 17 fractional digits in ModelSim, so I have all the options up til that point
-            puts $fileId "radix define fp_${i} -fixed -fraction 1 -base decimal"
-            puts $fileId "radix define sfp_${i} -fixed -signed -fraction 1 -base decimal"
+            puts $fileId "radix define fp_${i} -fixed -fraction ${i} -base decimal"
+            puts $fileId "radix define sfp_${i} -fixed -signed -fraction ${i} -base decimal"
         }
         #So that the top level signals are already recorded during the simulation
         puts $fileId "add wave /$tb_name/*"

@@ -53,6 +53,7 @@ for num,i in enumerate(tokens):
         elif (i.kind is TokenKind.ENDDEFINITIONS):
             print (pairs)
             state = "changes"
+            k = 0
 
     elif (state == "changes"):
         if (i.kind is TokenKind.CHANGE_TIME):
@@ -62,12 +63,20 @@ for num,i in enumerate(tokens):
                 if (vals[j]['modified'] == True):
                     values = vals[j]['values']
                     lv = vals[j]['last_val']
-                    if (((lv >> 12) & 0x1) == 1):
-                        values.append([prev_time, lv * -1])
+                    #print("{} Original value is {}".format(j, bin(lv)))
+                    if (((lv >> 13) & 0x1) == 1):
+                        new_val = (lv - (1 << 14)) /(2**12)
+                        values.append([prev_time, new_val])
+                        #print("New value1 is {}".format(new_val))
                     else:
-                        values.append([prev_time, lv])
+                        new_val = (lv) /(2**12)
+                        values.append([prev_time, new_val])
+                        #print("New value2 is {}".format(new_val))
                     vals[j]['values'] = values
                     vals[j]['modified'] = False
+                    k = k+1
+                    #if (k == 100):
+                        #sys.exit()
         elif (i.kind is TokenKind.CHANGE_SCALAR):
             id_code = i.scalar_change.id_code
             for j in pairs:
@@ -95,8 +104,8 @@ for num,i in enumerate(tokens):
 #print(vals['w1']['values'])
 a = vals['w1']['values']
 x,y = zip(*a)
-for num,i in enumerate(y):
-    if (num < 500):
-        print(bin(i))
+#for num,i in enumerate(y):
+#    if (num < 500):
+#        print(i)
 plt.plot(x, y)
 plt.show()
