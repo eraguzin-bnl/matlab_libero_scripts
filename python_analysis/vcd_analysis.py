@@ -1,9 +1,7 @@
-import io
+import io, sys, os, json
 from vcd.reader import TokenKind, tokenize
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
-import json
 
 class LuSEE_VCD_Analyze:
     def __init__(self):
@@ -14,9 +12,12 @@ class LuSEE_VCD_Analyze:
         self.signals_of_interest = {}
         for num,i in enumerate(json_data["Signals"]):
             listing = {}
+            listing['Title'] = json_data["Signals"][i]['Title']
+            listing['Y-axis'] = json_data["Signals"][i]['Y-axis']
             listing['Signedness'] = json_data["Signals"][i]['Signedness']
             listing['Word Length'] = json_data["Signals"][i]['Word Length']
             listing['Fraction Length'] = json_data["Signals"][i]['Fraction Length']
+            listing['Smoothing'] = json_data["Signals"][i]['Smoothing']
             self.signals_of_interest[i] = listing
 
         #Example dicts:
@@ -32,16 +33,17 @@ class LuSEE_VCD_Analyze:
         self.top = None
         self.time = 0
         self.prev_time = 0
+        self.plot_num = 0
 
     def header(self):
         for num,i in enumerate(self.tokens):
             #Still in the preamble. It's getting header data and signal definitions.
             if (i.kind is TokenKind.TIMESCALE):
-                time_magnitude = i.timescale.magnitude.value
-                timescale = i.timescale.unit.value
+                self.time_magnitude = i.timescale.magnitude.value
+                self.timescale = i.timescale.unit.value
 
             elif (i.kind is TokenKind.SCOPE):
-                top = i.scope.ident
+                self.top = i.scope.ident
 
             elif (i.kind is TokenKind.VAR):
                 id_code = i.var.id_code
@@ -83,10 +85,9 @@ class LuSEE_VCD_Analyze:
                 break
     def body(self):
         for num,i in enumerate(self.tokens):
-        #Unfortunately the only way to check these files is line by line as far as I can tell
+            #Unfortunately the only way to check these files is line by line as far as I can tell
             #If the time has changed, check for any values that may have changed in the previous time interval
             #If there is an array, we want the final value to be recorded after all bits of the array have been registered as changed.
-            #TODO add an option for a time tick before the change with the previous value - smoothing
             #VCD files end with a time stamp, so this will be the last section read when analyzing a file
             if (i.kind is TokenKind.CHANGE_TIME):
                 self.prev_time = self.time
@@ -99,18 +100,25 @@ class LuSEE_VCD_Analyze:
                         signedness = self.signals_of_interest[j]['Signedness']
                         word_length = self.signals_of_interest[j]['Word Length']
                         fraction_length = self.signals_of_interest[j]['Fraction Length']
-                        #print("{} Original value is {}".format(j, bin(lv)))
+
+                        #Because VHDL signals aren't report until they change, you might get weird interpolation
+                        #This makes sure that the plotted line before this most recent change is at the right value
+                        if (self.signals_of_interest[j]['Smoothing'] == "true"):
+                            x.append(self.time - self.time_magnitude)
+                            if (len(y) > 0):
+                                y.append(y[-1])
+                            else:
+                                y.append(0)
+
                         if (signedness == 'signed'):
                             if (((lv >> (word_length - 1)) & 0x1) == 1):
                                 new_val = (lv - (1 << word_length)) /(2**fraction_length)
                                 x.append(self.prev_time)
                                 y.append(new_val)
-                                #print("New value1 is {}".format(new_val))
                             else:
                                 new_val = (lv) /(2**fraction_length)
                                 x.append(self.prev_time)
                                 y.append(new_val)
-                                #print("New value2 is {}".format(new_val))
                         else:
                             new_val = (lv) /(2**fraction_length)
                             x.append(self.prev_time)
@@ -153,15 +161,39 @@ class LuSEE_VCD_Analyze:
                     self.vals[signal]['last_val'] = previous_val
                     self.vals[signal]['modified'] = True
 
-    def plot(self, signal):
-        x = self.vals[signal]['x']
+    def plot(self, signal, division=1):
+        #TODO save the plot as a file, save the data as a file
+        x = np.divide(self.vals[signal]['x'], division)
         y = self.vals[signal]['y']
-        plt.plot(x, y)
+
+        fig, ax = plt.subplots()
+
+        title = self.signals_of_interest[signal]["Title"]
+        fig.suptitle(title, fontsize = 24)
+        yaxis = self.signals_of_interest[signal]["Y-axis"]
+        ax.set_ylabel(yaxis, fontsize=14)
+
+
+        ax.set_xlabel('Time (ns)', fontsize=14)
+        ax.ticklabel_format(style='plain', useOffset=False, axis='x')
+
+        ax.plot(x, y)
+
+        plot_path = os.path.join(os.getcwd(), "plots")
+        if not (os.path.exists(plot_path)):
+            os.makedirs(plot_path)
+
+        fig.savefig (os.path.join(plot_path, f"plot{self.plot_num}.jpg"))
+        np.save(os.path.join(plot_path, f"data{self.plot_num}"), x, y)
+        self.plot_num = self.plot_num + 1
         plt.show()
+
+    def plot_spectrometer(self, signal):
+        pass
 
 #Called from command line
 if __name__ == "__main__":
     x = LuSEE_VCD_Analyze()
     x.header()
     x.body()
-    x.plot('w1')
+    x.plot('w1', 1e6)

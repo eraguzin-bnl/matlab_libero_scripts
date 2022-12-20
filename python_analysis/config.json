@@ -1,14 +1,20 @@
 {"File Name": "weight_streamer_waveform.vcd",
 "Signals":
     {"w1": {
+        "Title": "Weight 1",
+        "Y-axis": "weight",
         "Signedness": "signed",
         "Word Length": 14,
-        "Fraction Length": 12
+        "Fraction Length": 12,
+        "Smoothing": "true"
         },
     "w1_done": {
+        "Title": "Weight 1 Done",
+        "Y-axis": "weight_done (binary)",
         "Signedness": "unsigned",
         "Word Length": 1,
-        "Fraction Length": 0
+        "Fraction Length": 0,
+        "Smoothing": "true"
     }
  }
 }
