@@ -1,0 +1,14 @@
+{"File Name": "weight_streamer_waveform.vcd",
+"Signals":
+    {"w1": {
+        "Signedness": "signed",
+        "Word Length": 14,
+        "Fraction Length": 12
+        },
+    "w1_done": {
+        "Signedness": "unsigned",
+        "Word Length": 1,
+        "Fraction Length": 0
+    }
+ }
+}
