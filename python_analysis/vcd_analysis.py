@@ -50,14 +50,16 @@ class LuSEE_VCD_Analyze:
                 #Want to create signals that keep the arrays together.
                 if reference in self.signals_of_interest:
                     if reference not in self.pairs:
-                        #First time a signal name is found. A key in the master list is made for it as a 1-bit value. And a spot in the value tracker array ismade too
+                        #First time a signal name is found. A key in the master list is made for it as a 1-bit value
+                        #And a spot in the value tracker array ismade too
                         key_in = {}
                         key_in[id_code] = bit_index
                         key_in['bits'] = 1
                         self.pairs[reference] = key_in
 
                         val_in = {}
-                        val_in['values'] = []
+                        val_in['x'] = []
+                        val_in['y'] = []
                         val_in['last_val'] = 0
                         val_in['modified'] = False
                         self.vals[reference] = val_in
@@ -91,7 +93,8 @@ class LuSEE_VCD_Analyze:
                 self.time = int(i.data)
                 for j in self.pairs:
                     if (self.vals[j]['modified'] == True):
-                        values = self.vals[j]['values']
+                        x = self.vals[j]['x']
+                        y = self.vals[j]['y']
                         lv = self.vals[j]['last_val']
                         signedness = self.signals_of_interest[j]['Signedness']
                         word_length = self.signals_of_interest[j]['Word Length']
@@ -100,17 +103,21 @@ class LuSEE_VCD_Analyze:
                         if (signedness == 'signed'):
                             if (((lv >> (word_length - 1)) & 0x1) == 1):
                                 new_val = (lv - (1 << word_length)) /(2**fraction_length)
-                                values.append([self.prev_time, new_val])
+                                x.append(self.prev_time)
+                                y.append(new_val)
                                 #print("New value1 is {}".format(new_val))
                             else:
                                 new_val = (lv) /(2**fraction_length)
-                                values.append([self.prev_time, new_val])
+                                x.append(self.prev_time)
+                                y.append(new_val)
                                 #print("New value2 is {}".format(new_val))
                         else:
                             new_val = (lv) /(2**fraction_length)
-                            values.append([self.prev_time, new_val])
+                            x.append(self.prev_time)
+                            y.append(new_val)
 
-                        self.vals[j]['values'] = values
+                        self.vals[j]['x'] = x
+                        self.vals[j]['y'] = y
                         self.vals[j]['modified'] = False
 
             #Each line after the time indicates a changed value. See if the changed value is one that is tracked
@@ -146,13 +153,9 @@ class LuSEE_VCD_Analyze:
                     self.vals[signal]['last_val'] = previous_val
                     self.vals[signal]['modified'] = True
 
-    def plot(self):
-        #print(self.vals['w1']['values'])
-        a = self.vals['w1']['values']
-        x,y = zip(*a)
-        #for num,i in enumerate(y):
-        #    if (num < 500):
-        #        print(i)
+    def plot(self, signal):
+        x = self.vals[signal]['x']
+        y = self.vals[signal]['y']
         plt.plot(x, y)
         plt.show()
 
@@ -161,4 +164,4 @@ if __name__ == "__main__":
     x = LuSEE_VCD_Analyze()
     x.header()
     x.body()
-    x.plot()
+    x.plot('w1')
