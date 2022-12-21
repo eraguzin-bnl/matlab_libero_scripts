@@ -4,9 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class LuSEE_VCD_Analyze:
-    def __init__(self):
+    def __init__(self, config_file):
 
-        with open("config.json", "r") as jsonfile:
+        with open(config_file, "r") as jsonfile:
             json_data = json.load(jsonfile)
 
         self.signals_of_interest = {}
@@ -35,6 +35,7 @@ class LuSEE_VCD_Analyze:
         self.prev_time = 0
         self.plot_num = 0
 
+        self.time_for_ready = 5000
     def header(self):
         for num,i in enumerate(self.tokens):
             #Still in the preamble. It's getting header data and signal definitions.
@@ -49,6 +50,12 @@ class LuSEE_VCD_Analyze:
                 id_code = i.var.id_code
                 reference = i.var.reference
                 bit_index = i.var.bit_index
+                array_type = type(bit_index)
+                #This means it's an array of an array, so like $var wire 1 " pks_ref [0][12] $end
+                #This correction assumes you can only have double nested arrays. It will have to be fixed if you can have triple or higher
+                if array_type is tuple:
+                    reference = f"{reference}_{bit_index[0]}"
+                    bit_index = bit_index[1]
                 #Want to create signals that keep the arrays together.
                 if reference in self.signals_of_interest:
                     if reference not in self.pairs:
@@ -104,11 +111,9 @@ class LuSEE_VCD_Analyze:
                         #Because VHDL signals aren't report until they change, you might get weird interpolation
                         #This makes sure that the plotted line before this most recent change is at the right value
                         if (self.signals_of_interest[j]['Smoothing'] == "true"):
-                            x.append(self.time - self.time_magnitude)
                             if (len(y) > 0):
-                                y.append(y[-1])
-                            else:
-                                y.append(0)
+                                x.append(self.prev_time - self.time_magnitude)
+                                y.append(self.vals[j]['y'][-1])
 
                         if (signedness == 'signed'):
                             if (((lv >> (word_length - 1)) & 0x1) == 1):
@@ -162,7 +167,6 @@ class LuSEE_VCD_Analyze:
                     self.vals[signal]['modified'] = True
 
     def plot(self, signal, division=1):
-        #TODO save the plot as a file, save the data as a file
         x = np.divide(self.vals[signal]['x'], division)
         y = self.vals[signal]['y']
 
@@ -188,12 +192,44 @@ class LuSEE_VCD_Analyze:
         self.plot_num = self.plot_num + 1
         plt.show()
 
-    def plot_spectrometer(self, signal):
-        pass
+    def plot_spectrometer(self, signal, division=1):
+        x = self.vals['ready_expected']['x']
+        y = self.vals['ready_expected']['y']
+        print(x)
+        print(y)
+
+        chk_x = self.vals['ready_chkdata']['x']
+        chk_y = self.vals['ready_chkdata']['y']
+
+        ready_high1 = y.index(1)
+        print(ready_high1)
+        ready_high2 = y.index(1, ready_high1+1)
+        print(ready_high2)
+
+        time1 = x[ready_high1]
+        time2 = x[ready_high2]
+
+        print(time1)
+        print(time2)
+        t_d = time2 - time1
+        print(t_d)
+        #Turn into a while loop with a static t that is increasing and being checked against
+        if (t_d > self.time_for_ready):
+            print("enough")
+            enable = next(x for x in chk_x if x > time1)
+            enable_index =chk_x.index(enable)
+            print(enable)
+            print(enable_index)
+            enable_high = chk_y.index(1, enable_index+1)
+            print(enable_high)
+            enable_high_x = chk_x[enable_high]
+            print(enable_high_x)
+        else:
+            print("Not enough time passed for the ready signal")
 
 #Called from command line
 if __name__ == "__main__":
-    x = LuSEE_VCD_Analyze()
+    x = LuSEE_VCD_Analyze("config_peaks.json")
     x.header()
     x.body()
-    x.plot('w1', 1e6)
+    x.plot_spectrometer(['pks_ref_0', 'pks_ref_1', 'pks_ref_2', 'pks_ref_3', 'ready_chkdata', 'ready_expected'], 1e9)
