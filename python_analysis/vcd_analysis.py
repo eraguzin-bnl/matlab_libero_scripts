@@ -166,6 +166,11 @@ class LuSEE_VCD_Analyze:
                     self.vals[signal]['last_val'] = previous_val
                     self.vals[signal]['modified'] = True
 
+        #After the file is done
+        for i in self.vals:
+            self.vals[i]['x'].append(self.time)
+            self.vals[i]['y'].append(self.vals[i]['last_val'])
+
     def plot(self, signal, division=1):
         x = np.divide(self.vals[signal]['x'], division)
         y = self.vals[signal]['y']
@@ -192,12 +197,11 @@ class LuSEE_VCD_Analyze:
         self.plot_num = self.plot_num + 1
         plt.show()
 
-    def plot_spectrometer(self, signal, division=1):
+    def plot_spectrometer(self, signal, loop):
         self.time = 0
+        #Get all relevant values
         rdy_x = self.vals['ready_expected']['x']
         rdy_y = self.vals['ready_expected']['y']
-        print(rdy_x)
-        print(rdy_y)
 
         chk_x = self.vals['ready_chkdata']['x']
         chk_y = self.vals['ready_chkdata']['y']
@@ -214,72 +218,94 @@ class LuSEE_VCD_Analyze:
         pks3_x = self.vals['pks_ref_3']['x']
         pks3_y = self.vals['pks_ref_3']['y']
 
-        #First index where ready goes high
-        time_ready_high_start, time_ready_high_end = self.find_next_time(1, rdy_x, rdy_y, 50e3)
-        print(f"Time that ready goes high for at least 50 ns is {time_ready_high_start}, until {time_ready_high_end}")
-        self.time = time_ready_high_start
+        i = 0
+        #Searches for a certain iteration of the ready signal going high
+        while (i<=loop):
+            #Find first index where ready goes high
+            time_ready_high_start, time_ready_high_end = self.find_next_time(1, rdy_x, rdy_y, 50e3)
+            print(f"Time that ready goes high for at least 50 ns is {time_ready_high_start/1e3} ns, until {time_ready_high_end/1e3} ns")
+            self.time = time_ready_high_start
+            i = i + 1
 
         i = 0
         pk_values0 = []
         pk_values1 = []
         pk_values2 = []
         pk_values3 = []
+
+        #Search through this time period when "ready" is high for when the "check data" flag is high
         while (self.time < time_ready_high_end):
+            #Search for when the check data flag is high for at least 5 ns, but don't go longer than the ready flag is high
             time_enable_high_start, time_enable_high_end = self.find_next_time(1, chk_x, chk_y, 5e3, time_limit = time_ready_high_end)
             if (time_enable_high_end != None):
                 #print(f"Time that enable goes high for at least 5 ns is {time_enable_high_start}, until {time_enable_high_end}")
                 self.time = time_enable_high_end
                 i = i + 1
 
-                #This is the time where we want to get the pk values
+                #We know the time that "check data" goes high
+                #Convert that to the pk time domain to find a transition time after that
                 pk_time = next(i for i in pks0_x if i > time_enable_high_start)
                 pk_time_index = pks0_x.index(pk_time)
-                pk_value = pks0_y[pk_time_index]
+                #Find the value at the change before this time
+                #That's the actual value at the check data time
+                pk_value = pks0_y[pk_time_index-1]
                 pk_values0.append(pk_value)
 
+                #Repeat for the rest of the pks coming out of spectrometer.m
                 pk_time = next(i for i in pks1_x if i > time_enable_high_start)
                 pk_time_index = pks1_x.index(pk_time)
-                pk_value = pks1_y[pk_time_index]
+                pk_value = pks1_y[pk_time_index-1]
                 pk_values1.append(pk_value)
 
                 pk_time = next(i for i in pks2_x if i > time_enable_high_start)
                 pk_time_index = pks2_x.index(pk_time)
-                pk_value = pks2_y[pk_time_index]
+                pk_value = pks2_y[pk_time_index-1]
                 pk_values2.append(pk_value)
 
                 pk_time = next(i for i in pks3_x if i > time_enable_high_start)
                 pk_time_index = pks3_x.index(pk_time)
-                pk_value = pks3_y[pk_time_index]
+                pk_value = pks3_y[pk_time_index-1]
                 pk_values3.append(pk_value)
             else:
+                #Went past when the ready flag returns to 0
                 print("Done")
                 break
-        print(f"{i} enable signals found")
+        #Should be 2048
+        print(f"{i} check signals found")
         self.time = time_ready_high_end
+
+        #These are the 2 pks that are plotted, do the math they require
         pk1 = []
         pk2 = []
         for i in range(len(pk_values0)):
             pk1.append((pk_values0[i] + pk_values1[i] + 2*pk_values2[i])/4)
             pk2.append((pk_values0[i] + pk_values1[i] - 2*pk_values2[i])/4)
 
-        print(pk1)
-        print(pk2)
-
         fig, ax = plt.subplots()
-        ax.plot(pk1)
-        ax.plot(pk2)
+        ax.bar(range(0,2048),pk1)
+        ax.bar(range(0,2048),pk2)
         plt.show()
 
+    #Takes the value to look for in binary, the x and y coordinates
+    #the length of time in picoseconds to consider fully changing
+    #and a global time limit, if the search goes past that time, it's over
+
+    #It find the beginning and ending time when the y signal hits the value
+    #and it stays for the given amount of time
+    #Will only find a change in time, not if it's already at the desired value
     def find_next_time(self, value, x, y, length, time_limit = None):
         time = self.time
 
+        #Go from the global time to the next time tick for this given signal
         next_time = next(i for i in x if i > time)
         if (time_limit != None):
             if (next_time > time_limit):
                 print("Next change occurs after time limit")
                 return None, None
+        #Get the actual index of that time, so that you can match with Y values
         next_time_index = x.index(next_time)
 
+        #Quick way to just have variables to compare 1s and 0s
         if (value == 1):
             not_value = 0
         elif (value == 0):
@@ -289,33 +315,39 @@ class LuSEE_VCD_Analyze:
             return None
 
         while (True):
-            #Find the next time the signal is that value, starting at the current global time
+            #Find the next time the signal is the desired value
             try:
                 next_val = y.index(value, next_time_index)
             except ValueError:
                 print(f"Started checking from {time}, but signal does not reach {value}")
                 return None
+
             #Get the time of this tick hitting the value
             time1 = x[next_val]
 
-            #Find the next time the signal changes, starting at the time that it was found for this value
+            #Find the next time the signal changes back, starting at the time that it was found for this value
             try:
                 next_change = y.index(not_value, next_val + 1)
             except ValueError:
-                next_change = x[-1]
+                #It doesn't change back
+                #So the the "end time" is the last time in the signal array
+                next_change = len(x) -1
 
+            #Turn the index into actual time
             time2 = x[next_change]
 
+            #Check that it was long enough and return if so
+            #Or else, start with the latest time and continue the loop
             if (time2 - time1 > length):
                 #print(f"Signal changes to {value} at {time1} until {time2}, which is {(time2-time1)/1e3} ns")
                 return time1, time2
             else:
-                #print(f"Signal changes to {value} at {time1} but changes back at {time2}, before {length} time has passed")
-                time = time2
+                print(f"Signal changes to {value} at {time1} but changes back at {time2}, before {length} time has passed")
+                next_time_index = next_change
 
 #Called from command line
 if __name__ == "__main__":
     x = LuSEE_VCD_Analyze("config_peaks.json")
     x.header()
     x.body()
-    x.plot_spectrometer(['pks_ref_0', 'pks_ref_1', 'pks_ref_2', 'pks_ref_3', 'ready_chkdata', 'ready_expected'], 1e9)
+    x.plot_spectrometer(['pks_ref_0', 'pks_ref_1', 'pks_ref_2', 'pks_ref_3', 'ready_chkdata', 'ready_expected'], 0)
