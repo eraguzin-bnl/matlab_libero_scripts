@@ -166,7 +166,8 @@ class LuSEE_VCD_Analyze:
                     self.vals[signal]['last_val'] = previous_val
                     self.vals[signal]['modified'] = True
 
-        #After the file is done
+        #After the file is done, add the last value as the final time tick
+        #It helps with analysis later
         for i in self.vals:
             self.vals[i]['x'].append(self.time)
             self.vals[i]['y'].append(self.vals[i]['last_val'])
