@@ -1,0 +1,52 @@
+{"File Name": "pk_rdy_fixed.vcd",
+"Signals":
+    {"pks_ref_0": {
+        "Title": "Peaks",
+        "Y-axis": "power",
+        "Signedness": "unsigned",
+        "Word Length": 14,
+        "Fraction Length": 0,
+        "Smoothing": "false"
+        },
+    "pks_ref_1": {
+        "Title": "Peaks",
+        "Y-axis": "power",
+        "Signedness": "unsigned",
+        "Word Length": 14,
+        "Fraction Length": 0,
+        "Smoothing": "false"
+        },
+    "pks_ref_2": {
+        "Title": "Peaks",
+        "Y-axis": "power",
+        "Signedness": "unsigned",
+        "Word Length": 14,
+        "Fraction Length": 0,
+        "Smoothing": "false"
+        },
+    "pks_ref_3": {
+        "Title": "Peaks",
+        "Y-axis": "power",
+        "Signedness": "unsigned",
+        "Word Length": 14,
+        "Fraction Length": 0,
+        "Smoothing": "false"
+        },
+    "ready_chkdata": {
+        "Title": "Check Data",
+        "Y-axis": "chkdata (binary)",
+        "Signedness": "unsigned",
+        "Word Length": 1,
+        "Fraction Length": 0,
+        "Smoothing": "true"
+    },
+    "ready_expected": {
+        "Title": "Ready",
+        "Y-axis": "ready (binary)",
+        "Signedness": "unsigned",
+        "Word Length": 1,
+        "Fraction Length": 0,
+        "Smoothing": "true"
+    }
+ }
+}

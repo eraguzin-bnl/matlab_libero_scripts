@@ -193,39 +193,125 @@ class LuSEE_VCD_Analyze:
         plt.show()
 
     def plot_spectrometer(self, signal, division=1):
-        x = self.vals['ready_expected']['x']
-        y = self.vals['ready_expected']['y']
-        print(x)
-        print(y)
+        self.time = 0
+        rdy_x = self.vals['ready_expected']['x']
+        rdy_y = self.vals['ready_expected']['y']
+        print(rdy_x)
+        print(rdy_y)
 
         chk_x = self.vals['ready_chkdata']['x']
         chk_y = self.vals['ready_chkdata']['y']
 
-        ready_high1 = y.index(1)
-        print(ready_high1)
-        ready_high2 = y.index(1, ready_high1+1)
-        print(ready_high2)
+        pks0_x = self.vals['pks_ref_0']['x']
+        pks0_y = self.vals['pks_ref_0']['y']
 
-        time1 = x[ready_high1]
-        time2 = x[ready_high2]
+        pks1_x = self.vals['pks_ref_1']['x']
+        pks1_y = self.vals['pks_ref_1']['y']
 
-        print(time1)
-        print(time2)
-        t_d = time2 - time1
-        print(t_d)
-        #Turn into a while loop with a static t that is increasing and being checked against
-        if (t_d > self.time_for_ready):
-            print("enough")
-            enable = next(x for x in chk_x if x > time1)
-            enable_index =chk_x.index(enable)
-            print(enable)
-            print(enable_index)
-            enable_high = chk_y.index(1, enable_index+1)
-            print(enable_high)
-            enable_high_x = chk_x[enable_high]
-            print(enable_high_x)
+        pks2_x = self.vals['pks_ref_2']['x']
+        pks2_y = self.vals['pks_ref_2']['y']
+
+        pks3_x = self.vals['pks_ref_3']['x']
+        pks3_y = self.vals['pks_ref_3']['y']
+
+        #First index where ready goes high
+        time_ready_high_start, time_ready_high_end = self.find_next_time(1, rdy_x, rdy_y, 50e3)
+        print(f"Time that ready goes high for at least 50 ns is {time_ready_high_start}, until {time_ready_high_end}")
+        self.time = time_ready_high_start
+
+        i = 0
+        pk_values0 = []
+        pk_values1 = []
+        pk_values2 = []
+        pk_values3 = []
+        while (self.time < time_ready_high_end):
+            time_enable_high_start, time_enable_high_end = self.find_next_time(1, chk_x, chk_y, 5e3, time_limit = time_ready_high_end)
+            if (time_enable_high_end != None):
+                #print(f"Time that enable goes high for at least 5 ns is {time_enable_high_start}, until {time_enable_high_end}")
+                self.time = time_enable_high_end
+                i = i + 1
+
+                #This is the time where we want to get the pk values
+                pk_time = next(i for i in pks0_x if i > time_enable_high_start)
+                pk_time_index = pks0_x.index(pk_time)
+                pk_value = pks0_y[pk_time_index]
+                pk_values0.append(pk_value)
+
+                pk_time = next(i for i in pks1_x if i > time_enable_high_start)
+                pk_time_index = pks1_x.index(pk_time)
+                pk_value = pks1_y[pk_time_index]
+                pk_values1.append(pk_value)
+
+                pk_time = next(i for i in pks2_x if i > time_enable_high_start)
+                pk_time_index = pks2_x.index(pk_time)
+                pk_value = pks2_y[pk_time_index]
+                pk_values2.append(pk_value)
+
+                pk_time = next(i for i in pks3_x if i > time_enable_high_start)
+                pk_time_index = pks3_x.index(pk_time)
+                pk_value = pks3_y[pk_time_index]
+                pk_values3.append(pk_value)
+            else:
+                print("Done")
+                break
+        print(f"{i} enable signals found")
+        self.time = time_ready_high_end
+        pk1 = []
+        pk2 = []
+        for i in range(len(pk_values0)):
+            pk1.append((pk_values0[i] + pk_values1[i] + 2*pk_values2[i])/4)
+            pk2.append((pk_values0[i] + pk_values1[i] - 2*pk_values2[i])/4)
+
+        print(pk1)
+        print(pk2)
+
+        fig, ax = plt.subplots()
+        ax.plot(pk1)
+        ax.plot(pk2)
+        plt.show()
+
+    def find_next_time(self, value, x, y, length, time_limit = None):
+        time = self.time
+
+        next_time = next(i for i in x if i > time)
+        if (time_limit != None):
+            if (next_time > time_limit):
+                print("Next change occurs after time limit")
+                return None, None
+        next_time_index = x.index(next_time)
+
+        if (value == 1):
+            not_value = 0
+        elif (value == 0):
+            not_value = 1
         else:
-            print("Not enough time passed for the ready signal")
+            print(f"Value needs to be 1 or 0, it's {value}")
+            return None
+
+        while (True):
+            #Find the next time the signal is that value, starting at the current global time
+            try:
+                next_val = y.index(value, next_time_index)
+            except ValueError:
+                print(f"Started checking from {time}, but signal does not reach {value}")
+                return None
+            #Get the time of this tick hitting the value
+            time1 = x[next_val]
+
+            #Find the next time the signal changes, starting at the time that it was found for this value
+            try:
+                next_change = y.index(not_value, next_val + 1)
+            except ValueError:
+                next_change = x[-1]
+
+            time2 = x[next_change]
+
+            if (time2 - time1 > length):
+                #print(f"Signal changes to {value} at {time1} until {time2}, which is {(time2-time1)/1e3} ns")
+                return time1, time2
+            else:
+                #print(f"Signal changes to {value} at {time1} but changes back at {time2}, before {length} time has passed")
+                time = time2
 
 #Called from command line
 if __name__ == "__main__":
