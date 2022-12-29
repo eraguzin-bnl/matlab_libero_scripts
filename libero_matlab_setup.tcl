@@ -16,6 +16,11 @@ set location "$directory_path/$project_name"
 puts "Location is $location"
 set hdl_location "$directory_path/codegen/$module/hdlsrc/"
 puts "HDL location is $hdl_location"
+#Matlab keeps double underscores for directories, but not for files
+#So when we use $module for files, eliminate the double underscore
+set module [string map {__ _} $module]
+#Also, having a trailing underscore complicates file name, so remove it
+set module [string trimright $module _]
 puts "File name is $module"
 set root "$module\_fixpt"
 puts "Root is $root"

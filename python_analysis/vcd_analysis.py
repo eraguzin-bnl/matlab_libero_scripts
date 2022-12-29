@@ -35,7 +35,6 @@ class LuSEE_VCD_Analyze:
         self.prev_time = 0
         self.plot_num = 0
 
-        self.time_for_ready = 5000
     def header(self):
         for num,i in enumerate(self.tokens):
             #Still in the preamble. It's getting header data and signal definitions.
@@ -306,19 +305,11 @@ class LuSEE_VCD_Analyze:
         #Get the actual index of that time, so that you can match with Y values
         next_time_index = x.index(next_time)
 
-        #Quick way to just have variables to compare 1s and 0s
-        if (value == 1):
-            not_value = 0
-        elif (value == 0):
-            not_value = 1
-        else:
-            print(f"Value needs to be 1 or 0, it's {value}")
-            return None
-
         while (True):
             #Find the next time the signal is the desired value
             try:
                 next_val = y.index(value, next_time_index)
+                end_val = y[next_val+1]
             except ValueError:
                 print(f"Started checking from {time}, but signal does not reach {value}")
                 return None
@@ -328,7 +319,7 @@ class LuSEE_VCD_Analyze:
 
             #Find the next time the signal changes back, starting at the time that it was found for this value
             try:
-                next_change = y.index(not_value, next_val + 1)
+                next_change = y.index(end_val, next_val + 1)
             except ValueError:
                 #It doesn't change back
                 #So the the "end time" is the last time in the signal array
@@ -346,9 +337,94 @@ class LuSEE_VCD_Analyze:
                 print(f"Signal changes to {value} at {time1} but changes back at {time2}, before {length} time has passed")
                 next_time_index = next_change
 
+    def plot_spectrometer2(self, signal, loop):
+        self.time = 0
+        #Get all relevant values
+        rdy_x = self.vals['ready_expected']['x']
+        rdy_y = self.vals['ready_expected']['y']
+
+        bin_x = self.vals['outbin_expected']['x']
+        bin_y = self.vals['outbin_expected']['y']
+
+        pks0_x = self.vals['pks_expected_0']['x']
+        pks0_y = self.vals['pks_expected_0']['y']
+
+        pks1_x = self.vals['pks_expected_1']['x']
+        pks1_y = self.vals['pks_expected_1']['y']
+
+        pks2_x = self.vals['pks_expected_2']['x']
+        pks2_y = self.vals['pks_expected_2']['y']
+
+        pks3_x = self.vals['pks_expected_3']['x']
+        pks3_y = self.vals['pks_expected_3']['y']
+
+        i = 0
+        pk_values0 = []
+        pk_values1 = []
+        pk_values2 = []
+        pk_values3 = []
+
+        #Searches for a certain iteration of the ready signal going high
+        while (i<=loop):
+            #Find first index where ready goes high
+            time_ready_high_start, time_ready_high_end = self.find_next_time(1, bin_x, bin_y, 1e3)
+            print(f"Time that ready goes to 1 for at least 1 ns is {time_ready_high_start/1e3} ns, until {time_ready_high_end/1e3} ns")
+            self.time = time_ready_high_start - 1
+            i = i + 1
+
+        i = 0
+        for i in range(1, 2048, 1):
+            time_ready_high_start, time_ready_high_end = self.find_next_time(i, bin_x, bin_y, 1e3)
+            #print(f"Time that ready goes to {i} for at least 1 ns is {time_ready_high_start/1e3} ns, until {time_ready_high_end/1e3} ns")
+            self.time = time_ready_high_start
+
+            #We know the time that "check data" goes high
+            #Convert that to the pk time domain to find a transition time after that
+            pk_time = next(i for i in pks0_x if i > time_ready_high_start)
+            pk_time_index = pks0_x.index(pk_time)
+            #Find the value at the change before this time
+            #That's the actual value at the check data time
+            pk_value = pks0_y[pk_time_index-1]
+            pk_values0.append(pk_value)
+
+            #Repeat for the rest of the pks coming out of spectrometer.m
+            pk_time = next(i for i in pks1_x if i > time_ready_high_start)
+            pk_time_index = pks1_x.index(pk_time)
+            pk_value = pks1_y[pk_time_index-1]
+            pk_values1.append(pk_value)
+
+        freq = []
+        for i in range(1, 2048, 1):
+            freq.append((i*50)/2048)
+        fig, ax = plt.subplots()
+        ax.plot(freq,pk_values0)
+        ax.set_yscale('log')
+        ax.plot(freq,pk_values1)
+        ax.set_yscale('log')
+        ax.set_xlim([0, 10])
+
+        title = "PFB output of 1MHz and 6 MHz sine waves"
+        fig.suptitle(title, fontsize = 14)
+        yaxis = "power"
+        ax.set_ylabel(yaxis, fontsize=14)
+
+
+        ax.set_xlabel('freq [MHz]', fontsize=14)
+        ax.ticklabel_format(style='plain', useOffset=False, axis='x')
+
+        plot_path = os.path.join(os.getcwd(), "plots")
+        if not (os.path.exists(plot_path)):
+            os.makedirs(plot_path)
+
+        fig.savefig (os.path.join(plot_path, f"plot{self.plot_num}.jpg"))
+        #np.save(os.path.join(plot_path, f"data{self.plot_num}"), x, y)
+        self.plot_num = self.plot_num + 1
+
+        plt.show()
+
 #Called from command line
 if __name__ == "__main__":
-    x = LuSEE_VCD_Analyze("config_peaks.json")
+    x = LuSEE_VCD_Analyze("config_peaks2.json")
     x.header()
     x.body()
-    x.plot_spectrometer(['pks_ref_0', 'pks_ref_1', 'pks_ref_2', 'pks_ref_3', 'ready_chkdata', 'ready_expected'], 0)
+    x.plot_spectrometer2(['pks_expected_0', 'pks_expected_1', 'pks_expected_2', 'pks_expected_3', 'outbin_expected', 'ready_expected'], 0)
