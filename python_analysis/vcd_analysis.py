@@ -20,6 +20,16 @@ class LuSEE_VCD_Analyze:
             listing['Smoothing'] = json_data["Signals"][i]['Smoothing']
             self.signals_of_interest[i] = listing
 
+        self.axis_font = json_data["Plot"]["axis_font"]
+        self.title_font = json_data["Plot"]["title_font"]
+        self.x_lim_low = json_data["Plot"]["x_lim_low"]
+        self.x_lim_high = json_data["Plot"]["x_lim_high"]
+        self.freq_adjust = json_data["Plot"]["freq_adjust"]
+
+        self.time_high = json_data["time_high"]
+        self.bins = json_data["bins"]
+        self.loop = json_data["loop"]
+
         #Example dicts:
         #{'w1': {'I': 13, 'bits': 14, 'J': 12, 'K': 11, 'L': 10, 'M': 9, 'N': 8, 'O': 7, 'P': 6, 'Q': 5, 'R': 4, 'S': 3, 'T': 2, 'U': 1, 'V': 0}}
         #{'w1': {'values': [], 'last_val': 0, 'modified': False}}
@@ -197,95 +207,6 @@ class LuSEE_VCD_Analyze:
         self.plot_num = self.plot_num + 1
         plt.show()
 
-    def plot_spectrometer(self, signal, loop):
-        self.time = 0
-        #Get all relevant values
-        rdy_x = self.vals['ready_expected']['x']
-        rdy_y = self.vals['ready_expected']['y']
-
-        chk_x = self.vals['ready_chkdata']['x']
-        chk_y = self.vals['ready_chkdata']['y']
-
-        pks0_x = self.vals['pks_ref_0']['x']
-        pks0_y = self.vals['pks_ref_0']['y']
-
-        pks1_x = self.vals['pks_ref_1']['x']
-        pks1_y = self.vals['pks_ref_1']['y']
-
-        pks2_x = self.vals['pks_ref_2']['x']
-        pks2_y = self.vals['pks_ref_2']['y']
-
-        pks3_x = self.vals['pks_ref_3']['x']
-        pks3_y = self.vals['pks_ref_3']['y']
-
-        i = 0
-        #Searches for a certain iteration of the ready signal going high
-        while (i<=loop):
-            #Find first index where ready goes high
-            time_ready_high_start, time_ready_high_end = self.find_next_time(1, rdy_x, rdy_y, 50e3)
-            print(f"Time that ready goes high for at least 50 ns is {time_ready_high_start/1e3} ns, until {time_ready_high_end/1e3} ns")
-            self.time = time_ready_high_start
-            i = i + 1
-
-        i = 0
-        pk_values0 = []
-        pk_values1 = []
-        pk_values2 = []
-        pk_values3 = []
-
-        #Search through this time period when "ready" is high for when the "check data" flag is high
-        while (self.time < time_ready_high_end):
-            #Search for when the check data flag is high for at least 5 ns, but don't go longer than the ready flag is high
-            time_enable_high_start, time_enable_high_end = self.find_next_time(1, chk_x, chk_y, 5e3, time_limit = time_ready_high_end)
-            if (time_enable_high_end != None):
-                #print(f"Time that enable goes high for at least 5 ns is {time_enable_high_start}, until {time_enable_high_end}")
-                self.time = time_enable_high_end
-                i = i + 1
-
-                #We know the time that "check data" goes high
-                #Convert that to the pk time domain to find a transition time after that
-                pk_time = next(i for i in pks0_x if i > time_enable_high_start)
-                pk_time_index = pks0_x.index(pk_time)
-                #Find the value at the change before this time
-                #That's the actual value at the check data time
-                pk_value = pks0_y[pk_time_index-1]
-                pk_values0.append(pk_value)
-
-                #Repeat for the rest of the pks coming out of spectrometer.m
-                pk_time = next(i for i in pks1_x if i > time_enable_high_start)
-                pk_time_index = pks1_x.index(pk_time)
-                pk_value = pks1_y[pk_time_index-1]
-                pk_values1.append(pk_value)
-
-                pk_time = next(i for i in pks2_x if i > time_enable_high_start)
-                pk_time_index = pks2_x.index(pk_time)
-                pk_value = pks2_y[pk_time_index-1]
-                pk_values2.append(pk_value)
-
-                pk_time = next(i for i in pks3_x if i > time_enable_high_start)
-                pk_time_index = pks3_x.index(pk_time)
-                pk_value = pks3_y[pk_time_index-1]
-                pk_values3.append(pk_value)
-            else:
-                #Went past when the ready flag returns to 0
-                print("Done")
-                break
-        #Should be 2048
-        print(f"{i} check signals found")
-        self.time = time_ready_high_end
-
-        #These are the 2 pks that are plotted, do the math they require
-        pk1 = []
-        pk2 = []
-        for i in range(len(pk_values0)):
-            pk1.append((pk_values0[i] + pk_values1[i] + 2*pk_values2[i])/4)
-            pk2.append((pk_values0[i] + pk_values1[i] - 2*pk_values2[i])/4)
-
-        fig, ax = plt.subplots()
-        ax.bar(range(0,2048),pk1)
-        ax.bar(range(0,2048),pk2)
-        plt.show()
-
     #Takes the value to look for in binary, the x and y coordinates
     #the length of time in picoseconds to consider fully changing
     #and a global time limit, if the search goes past that time, it's over
@@ -337,12 +258,9 @@ class LuSEE_VCD_Analyze:
                 print(f"Signal changes to {value} at {time1} but changes back at {time2}, before {length} time has passed")
                 next_time_index = next_change
 
-    def plot_spectrometer2(self, signal, loop):
+    def plot_spectrometer(self):
         self.time = 0
         #Get all relevant values
-        rdy_x = self.vals['ready_expected']['x']
-        rdy_y = self.vals['ready_expected']['y']
-
         bin_x = self.vals['outbin_expected']['x']
         bin_y = self.vals['outbin_expected']['y']
 
@@ -365,16 +283,16 @@ class LuSEE_VCD_Analyze:
         pk_values3 = []
 
         #Searches for a certain iteration of the ready signal going high
-        while (i<=loop):
+        while (i<=self.loop):
             #Find first index where ready goes high
-            time_ready_high_start, time_ready_high_end = self.find_next_time(1, bin_x, bin_y, 1e3)
-            print(f"Time that ready goes to 1 for at least 1 ns is {time_ready_high_start/1e3} ns, until {time_ready_high_end/1e3} ns")
+            time_ready_high_start, time_ready_high_end = self.find_next_time(1, bin_x, bin_y, self.time_high)
+            print(f"Time that ready goes to 1 for at least {self.time_high/1e3} ns is {time_ready_high_start/1e3} ns, until {time_ready_high_end/1e3} ns")
             self.time = time_ready_high_start - 1
             i = i + 1
 
         i = 0
-        for i in range(1, 2048, 1):
-            time_ready_high_start, time_ready_high_end = self.find_next_time(i, bin_x, bin_y, 1e3)
+        for i in range(1, self.bins, 1):
+            time_ready_high_start, time_ready_high_end = self.find_next_time(i, bin_x, bin_y, self.time_high)
             #print(f"Time that ready goes to {i} for at least 1 ns is {time_ready_high_start/1e3} ns, until {time_ready_high_end/1e3} ns")
             self.time = time_ready_high_start
 
@@ -394,23 +312,23 @@ class LuSEE_VCD_Analyze:
             pk_values1.append(pk_value)
 
         freq = []
-        for i in range(1, 2048, 1):
-            freq.append((i*50)/2048)
+        for i in range(1, self.bins, 1):
+            freq.append((i*self.freq_adjust)/self.bins)
         fig, ax = plt.subplots()
         ax.plot(freq,pk_values0)
         ax.set_yscale('log')
         ax.plot(freq,pk_values1)
         ax.set_yscale('log')
-        ax.set_xlim([0, 10])
+        ax.set_xlim([self.x_lim_low, self.x_lim_high])
 
         title = "PFB output of 1MHz and 6 MHz sine waves"
-        fig.suptitle(title, fontsize = 14)
+        fig.suptitle(title, fontsize = self.title_font)
         yaxis = "power"
-        ax.set_ylabel(yaxis, fontsize=14)
+        ax.set_ylabel(yaxis, fontsize=self.axis_font)
 
 
-        ax.set_xlabel('freq [MHz]', fontsize=14)
-        ax.ticklabel_format(style='plain', useOffset=False, axis='x')
+        ax.set_xlabel('freq [MHz]', fontsize=self.axis_font)
+        #ax.ticklabel_format(style='plain', useOffset=False, axis='x')
 
         plot_path = os.path.join(os.getcwd(), "plots")
         if not (os.path.exists(plot_path)):
@@ -424,7 +342,7 @@ class LuSEE_VCD_Analyze:
 
 #Called from command line
 if __name__ == "__main__":
-    x = LuSEE_VCD_Analyze("config_peaks2.json")
+    x = LuSEE_VCD_Analyze(sys.argv[1])
     x.header()
     x.body()
-    x.plot_spectrometer2(['pks_expected_0', 'pks_expected_1', 'pks_expected_2', 'pks_expected_3', 'outbin_expected', 'ready_expected'], 0)
+    x.plot_spectrometer()
