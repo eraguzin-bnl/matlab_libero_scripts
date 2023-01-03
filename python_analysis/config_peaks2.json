@@ -1,0 +1,62 @@
+{"File Name": "spectrometer_working_fixed.vcd",
+"time_high": 1e3,
+"bins": 2048,
+"loop":0,
+"Plot":
+    {"axis_font": 14,
+     "title_font": 14,
+     "x_lim_low": 0,
+     "x_lim_high": 10,
+     "freq_adjust": 50
+    },
+"Signals":
+    {"pks_expected_0": {
+        "Title": "Peaks1",
+        "Y-axis": "power",
+        "Signedness": "unsigned",
+        "Word Length": 32,
+        "Fraction Length": 0,
+        "Smoothing": "false"
+        },
+    "pks_expected_1": {
+        "Title": "Peaks2",
+        "Y-axis": "power",
+        "Signedness": "unsigned",
+        "Word Length": 32,
+        "Fraction Length": 0,
+        "Smoothing": "false"
+        },
+    "pks_expected_2": {
+        "Title": "Peaks3",
+        "Y-axis": "power",
+        "Signedness": "unsigned",
+        "Word Length": 32,
+        "Fraction Length": 0,
+        "Smoothing": "false"
+        },
+    "pks_expected_3": {
+        "Title": "Peaks4",
+        "Y-axis": "power",
+        "Signedness": "unsigned",
+        "Word Length": 32,
+        "Fraction Length": 0,
+        "Smoothing": "false"
+        },
+    "outbin_expected": {
+        "Title": "Bin Num",
+        "Y-axis": "Num",
+        "Signedness": "unsigned",
+        "Word Length": 10,
+        "Fraction Length": 0,
+        "Smoothing": "false"
+        },
+    "ready_expected": {
+        "Title": "Ready",
+        "Y-axis": "ready (binary)",
+        "Signedness": "unsigned",
+        "Word Length": 1,
+        "Fraction Length": 0,
+        "Smoothing": "true"
+        }
+    }
+}
