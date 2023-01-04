@@ -15,7 +15,7 @@
         "Y-axis": "power",
         "Signedness": "unsigned",
         "Word Length": 32,
-        "Fraction Length": 0,
+        "Fraction Length": -15,
         "Smoothing": "false"
         },
     "pks_expected_1": {
@@ -23,7 +23,7 @@
         "Y-axis": "power",
         "Signedness": "unsigned",
         "Word Length": 32,
-        "Fraction Length": 0,
+        "Fraction Length": -15,
         "Smoothing": "false"
         },
     "pks_expected_2": {
