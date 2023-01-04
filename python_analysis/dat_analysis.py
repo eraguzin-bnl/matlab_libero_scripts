@@ -20,13 +20,17 @@ bin_array = []
 pks_ch1 = []
 pks_ch2 = []
 state = "initial"
-
+i = 0
+loop = 1
 for num,bin_num in enumerate(bins):
     if (bin_num == "001"):
+        i = i + 1
         if (state != "done"):
-            state = "append"
+            if (i > loop):
+                state = "append"
     if (bin_num == "7ff"):
-        state = "done"
+        if (i > loop):
+            state = "done"
     if (state == "append"):
         bin_array.append(int(bin_num, 16))
         pks_line = pks_array[num].split()
