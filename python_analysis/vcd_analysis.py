@@ -95,10 +95,11 @@ class LuSEE_VCD_Analyze:
 
             #The last line of the preamble/header
             elif (i.kind is TokenKind.ENDDEFINITIONS):
-                print (self.pairs)
-                print (self.vals)
-                print (self.sensitivity_list)
+                #print (self.pairs)
+                #print (self.vals)
+                #print (self.sensitivity_list)
                 break
+            
     def body(self):
         for num,i in enumerate(self.tokens):
             #Unfortunately the only way to check these files is line by line as far as I can tell
@@ -258,7 +259,7 @@ class LuSEE_VCD_Analyze:
                 print(f"Signal changes to {value} at {time1} but changes back at {time2}, before {length} time has passed")
                 next_time_index = next_change
 
-    def plot_spectrometer(self):
+    def plot_spectrometer(self,loop=None, return_data=False):
         self.time = 0
         #Get all relevant values
         bin_x = self.vals['outbin_expected']['x']
@@ -282,16 +283,20 @@ class LuSEE_VCD_Analyze:
         pk_values2 = []
         pk_values3 = []
 
+
+        if loop is None:
+            loop = self.loop
         #Searches for a certain iteration of the ready signal going high
-        while (i<=self.loop):
+        for i in range(loop+1):
             #Find first index where ready goes high
             time_ready_high_start, time_ready_high_end = self.find_next_time(1, bin_x, bin_y, self.time_high)
             print(f"Time that ready goes to 1 for at least {self.time_high/1e3} ns is {time_ready_high_start/1e3} ns, until {time_ready_high_end/1e3} ns")
-            self.time = time_ready_high_start - 1
-            i = i + 1
+            self.time = time_ready_high_start # start from where you ended, so you find next one
 
+        # step back a little
+        self.time = time_ready_high_start - 1
         i = 0
-        for i in range(1, self.bins, 1):
+        for i in range(1, self.bins-1, 1):  ## we skip last bin due to some weird edge issue
             time_ready_high_start, time_ready_high_end = self.find_next_time(i, bin_x, bin_y, self.time_high)
             #print(f"Time that ready goes to {i} for at least 1 ns is {time_ready_high_start/1e3} ns, until {time_ready_high_end/1e3} ns")
             self.time = time_ready_high_start
@@ -311,9 +316,16 @@ class LuSEE_VCD_Analyze:
             pk_value = pks1_y[pk_time_index-1]
             pk_values1.append(pk_value)
 
-        freq = []
-        for i in range(1, self.bins, 1):
-            freq.append((i*self.freq_adjust)/self.bins)
+        # throw away last one
+        pk_values0.append(0)
+        pk_values1.append(0)
+        
+            
+        freq = self.freq_adjust/self.bins * np.arange(1,self.bins)
+
+        if return_data:
+            return freq, np.array(pk_values0), np.array(pk_values1)
+        
         fig, ax = plt.subplots()
         ax.plot(freq,pk_values0)
         ax.set_yscale('log')
@@ -339,6 +351,7 @@ class LuSEE_VCD_Analyze:
         self.plot_num = self.plot_num + 1
 
         plt.show()
+
 
 #Called from command line
 if __name__ == "__main__":

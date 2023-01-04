@@ -1,7 +1,7 @@
 {"File Name": "spectrometer_working_fixed.vcd",
 "time_high": 1e3,
 "bins": 2048,
-"loop":0,
+"loop":1,
 "Plot":
     {"axis_font": 14,
      "title_font": 14,
