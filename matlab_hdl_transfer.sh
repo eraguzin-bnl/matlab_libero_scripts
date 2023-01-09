@@ -164,6 +164,26 @@ while getopts :-:s:l:d:f:cm o; do
 done
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Set up directory structure
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+if [ $directory != none ]
+    then
+        location_to_send=$local_project/$directory
+    else
+        if [ $scp_source != none ]
+        then
+            #https://unix.stackexchange.com/questions/247560/print-everything-after-a-slash
+            #https://stackoverflow.com/questions/4651437/how-do-i-set-a-variable-to-the-output-of-a-command-in-bash
+            directory=$(echo $scp_source | sed 's:.*/::')
+            echo "Directory is now" $directory
+            location_to_send=$local_project/$directory
+        else
+            location_to_send=$local_project
+        fi
+fi
+
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Do the scp if necessary
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -173,7 +193,7 @@ then
     then
         echo "--------------------------------------------------------------------------------------------------------------"
         echo "SCP INITIALIZING"
-        scp -r $scp_source $local_project
+        scp -r $scp_source $location_to_send
         echo "SCP FINISHED"
         echo "--------------------------------------------------------------------------------------------------------------"
     else
@@ -197,22 +217,6 @@ fi
 #Start the Libero project, run that TCL file
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 export LM_LICENSE_FILE=1702@iolicense2.inst.bnl.gov:7180@iolicense2.inst.bnl.gov:7184@iolicense2.inst.bnl.gov
-
-if [ $scp_source != none ]
-then
-    #https://unix.stackexchange.com/questions/247560/print-everything-after-a-slash
-    #https://stackoverflow.com/questions/4651437/how-do-i-set-a-variable-to-the-output-of-a-command-in-bash
-    directory=$(echo $scp_source | sed 's:.*/::')
-    echo "Directory is now" $directory
-    location_to_send=$local_project/$directory
-else
-    if [ $directory == none ]
-    then
-        location_to_send=$local_project
-    else
-        location_to_send=$local_project/$directory
-    fi
-fi
 
 echo "--------------------------------------------------------------------------------------------------------------"
 echo "TCL SCRIPT INITIALIZING"
