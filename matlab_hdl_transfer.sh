@@ -15,6 +15,9 @@
 #Options parser
 #https://unix.stackexchange.com/questions/321126/dash-arguments-to-shell-scripts
 
+#Example input:
+#./matlab_hdl_transfer.sh --scp_source eraguzin@silicon.inst.bnl.gov:/u/home/eraguzin/matlab/LNspec/matlab --local_project ~/nextcloud/LuSEE/matlab_transfer --directory matlab_chain2_script --file weight_streamer --create --open
+
 #If you need to tell the user how to use the command
 PROGNAME=$0
 usage() {
@@ -66,8 +69,8 @@ open=false
 #Parse with long arguments
 #https://stackoverflow.com/a/7680682
 
-while getopts :-:s:l:d:f:cm o; do
-  case $o in
+while getopts :-:s:l:d:f:cm x; do
+  case $x in
     -)
             case "${OPTARG}" in
                 scp_source)

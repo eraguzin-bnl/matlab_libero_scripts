@@ -1,4 +1,4 @@
-{"File Name": "spectrometer_working_fixed.vcd",
+{"File Name": "no2x_actual_fix.vcd",
 "time_high": 1e3,
 "bins": 2048,
 "loop":1,
@@ -10,7 +10,7 @@
      "freq_adjust": 50
     },
 "Signals":
-    {"pks_expected_0": {
+    {"pks_0": {
         "Title": "Peaks1",
         "Y-axis": "power",
         "Signedness": "unsigned",
@@ -18,7 +18,7 @@
         "Fraction Length": -15,
         "Smoothing": "false"
         },
-    "pks_expected_1": {
+    "pks_1": {
         "Title": "Peaks2",
         "Y-axis": "power",
         "Signedness": "unsigned",
@@ -26,7 +26,7 @@
         "Fraction Length": -15,
         "Smoothing": "false"
         },
-    "pks_expected_2": {
+    "pks_2": {
         "Title": "Peaks3",
         "Y-axis": "power",
         "Signedness": "unsigned",
@@ -34,7 +34,7 @@
         "Fraction Length": 0,
         "Smoothing": "false"
         },
-    "pks_expected_3": {
+    "pks_3": {
         "Title": "Peaks4",
         "Y-axis": "power",
         "Signedness": "unsigned",
@@ -42,7 +42,7 @@
         "Fraction Length": 0,
         "Smoothing": "false"
         },
-    "outbin_expected": {
+    "outbin": {
         "Title": "Bin Num",
         "Y-axis": "Num",
         "Signedness": "unsigned",
@@ -50,7 +50,7 @@
         "Fraction Length": 0,
         "Smoothing": "false"
         },
-    "ready_expected": {
+    "ready": {
         "Title": "Ready",
         "Y-axis": "ready (binary)",
         "Signedness": "unsigned",

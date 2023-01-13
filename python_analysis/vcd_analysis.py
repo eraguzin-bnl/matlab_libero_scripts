@@ -235,6 +235,9 @@ class LuSEE_VCD_Analyze:
             except ValueError:
                 print(f"Started checking from {time}, but signal does not reach {value}")
                 return None
+            except IndexError:
+                print(f"Started checking from {time}, but signal does not reach {value}")
+                return None
 
             #Get the time of this tick hitting the value
             time1 = x[next_val]
@@ -262,20 +265,20 @@ class LuSEE_VCD_Analyze:
     def plot_spectrometer(self,loop=None, return_data=False):
         self.time = 0
         #Get all relevant values
-        bin_x = self.vals['outbin_expected']['x']
-        bin_y = self.vals['outbin_expected']['y']
+        bin_x = self.vals['outbin']['x']
+        bin_y = self.vals['outbin']['y']
 
-        pks0_x = self.vals['pks_expected_0']['x']
-        pks0_y = self.vals['pks_expected_0']['y']
+        pks0_x = self.vals['pks_0']['x']
+        pks0_y = self.vals['pks_0']['y']
 
-        pks1_x = self.vals['pks_expected_1']['x']
-        pks1_y = self.vals['pks_expected_1']['y']
+        pks1_x = self.vals['pks_1']['x']
+        pks1_y = self.vals['pks_1']['y']
 
-        pks2_x = self.vals['pks_expected_2']['x']
-        pks2_y = self.vals['pks_expected_2']['y']
+        pks2_x = self.vals['pks_2']['x']
+        pks2_y = self.vals['pks_2']['y']
 
-        pks3_x = self.vals['pks_expected_3']['x']
-        pks3_y = self.vals['pks_expected_3']['y']
+        pks3_x = self.vals['pks_3']['x']
+        pks3_y = self.vals['pks_3']['y']
 
         i = 0
         pk_values0 = []
@@ -289,16 +292,17 @@ class LuSEE_VCD_Analyze:
         #Searches for a certain iteration of the ready signal going high
         for i in range(loop+1):
             #Find first index where ready goes high
-            time_ready_high_start, time_ready_high_end = self.find_next_time(1, bin_x, bin_y, self.time_high)
-            print(f"Time that ready goes to 1 for at least {self.time_high/1e3} ns is {time_ready_high_start/1e3} ns, until {time_ready_high_end/1e3} ns")
+            time_ready_high_start, time_ready_high_end = self.find_next_time(0x7ff, bin_x, bin_y, self.time_high)
+            print(f"Time that outbin starts going for at least {self.time_high/1e3} ns is {time_ready_high_start/1e3} ns, until {time_ready_high_end/1e3} ns")
             self.time = time_ready_high_start # start from where you ended, so you find next one
 
         # step back a little
         self.time = time_ready_high_start - 1
         i = 0
-        for i in range(1, self.bins-1, 1):  ## we skip last bin due to some weird edge issue
+        for i in range(self.bins-1, 3, -1):  ## we skip last bin due to some weird edge issue
+            print(i)
             time_ready_high_start, time_ready_high_end = self.find_next_time(i, bin_x, bin_y, self.time_high)
-            #print(f"Time that ready goes to {i} for at least 1 ns is {time_ready_high_start/1e3} ns, until {time_ready_high_end/1e3} ns")
+            #print(f"Time that outpeak goes to {i} for at least 1 ns is {time_ready_high_start/1e3} ns, until {time_ready_high_end/1e3} ns")
             self.time = time_ready_high_start
 
             #We know the time that "check data" goes high
@@ -309,19 +313,21 @@ class LuSEE_VCD_Analyze:
             #That's the actual value at the check data time
             pk_value = pks0_y[pk_time_index-1]
             pk_values0.append(pk_value)
+            #print(f"pk0 is {hex(int(pk_value))}")
 
             #Repeat for the rest of the pks coming out of spectrometer.m
             pk_time = next(i for i in pks1_x if i > time_ready_high_start)
             pk_time_index = pks1_x.index(pk_time)
             pk_value = pks1_y[pk_time_index-1]
             pk_values1.append(pk_value)
+            #print(f"pk1 is {hex(int(pk_value))}")
 
         # throw away last one
         pk_values0.append(0)
         pk_values1.append(0)
         
-            
-        freq = self.freq_adjust/self.bins * np.arange(1,self.bins)
+        freq_reversed = np.flip(np.arange(1,self.bins-2))
+        freq = self.freq_adjust/self.bins * freq_reversed
 
         if return_data:
             return freq, np.array(pk_values0), np.array(pk_values1)
