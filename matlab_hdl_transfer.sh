@@ -196,9 +196,14 @@ then
     then
         echo "--------------------------------------------------------------------------------------------------------------"
         echo "SCP INITIALIZING"
-        scp -r $scp_source $location_to_send
+        scp -pr $scp_source $location_to_send
         echo "SCP FINISHED"
         echo "--------------------------------------------------------------------------------------------------------------"
+        echo "ZIPPING UP VHDL FILES"
+        zip -r $local_project/$directory . -i $directory/codegen/*/hdlsrc/*.vhd
+        echo "ZIPPING FINISHED"
+        echo "--------------------------------------------------------------------------------------------------------------"
+
     else
         echo "You need to specify a source and destination for the SCP to move files over"
     fi
