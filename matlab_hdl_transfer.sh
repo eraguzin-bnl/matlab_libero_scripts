@@ -200,7 +200,9 @@ then
         echo "SCP FINISHED"
         echo "--------------------------------------------------------------------------------------------------------------"
         echo "ZIPPING UP VHDL FILES"
-        zip -r $local_project/$directory . -i $directory/codegen/*/hdlsrc/*.vhd
+        #https://stackoverflow.com/questions/75177035/gnu-linux-proper-use-of-the-zip-command-to-flatten-the-subdirectories/75180778#75180778
+        (cd $local_project/$directory/codegen; zip -r - . -i '*.vhd') > $local_project/$directory/$directory.zip
+        #zip -r $local_project/$directory . -i $directory/codegen/*/hdlsrc/*.vhd
         echo "ZIPPING FINISHED"
         echo "--------------------------------------------------------------------------------------------------------------"
 
