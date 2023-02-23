@@ -231,7 +231,7 @@ export LM_LICENSE_FILE=1702@iolicense2.inst.bnl.gov:7180@iolicense2.inst.bnl.gov
 echo "--------------------------------------------------------------------------------------------------------------"
 echo "TCL SCRIPT INITIALIZING"
 
-/usr/local/microchip/Libero_SoC_v2022.2/Libero/bin64/libero script:libero_matlab_setup.tcl "script_args:$location_to_send $file" logfile:make_libero.log
+/usr/local/microchip/Libero_SoC_v2022.3/Libero/bin64/libero script:libero_matlab_setup.tcl "script_args:$location_to_send $file" logfile:make_libero.log
 
 echo "TCL SCRIPT FINISHED"
 echo "--------------------------------------------------------------------------------------------------------------"
@@ -244,7 +244,7 @@ then
     echo "--------------------------------------------------------------------------------------------------------------"
     echo "STARTING LIBERO"
 
-    /usr/local/microchip/Libero_SoC_v2022.2/Libero/bin/libero
+    /usr/local/microchip/Libero_SoC_v2022.3/Libero/bin/libero
 
     echo "LIBERO CLOSED"
     echo "--------------------------------------------------------------------------------------------------------------"
